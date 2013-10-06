@@ -23,6 +23,7 @@ from time import mktime
 
 global currenttime
 global basename
+global scriptpath
 
 # "line" is of the format '00:00:12,487 --> 00:00:14,762'
 # Return the number of milliseconds that this time evaluates to.
@@ -35,12 +36,14 @@ def get_start_time(line):
     mm = int(m.group().lstrip(':'))
     p = re.compile(':[0-9][0-9],')
     m = p.search(line)
+    # The .srt format was developed in France, so commas are used
+    # to denote decimal fractions.
     ss = int(m.group().lstrip(':').rstrip(','))
     ss = hh * 3600 + mm * 60 + ss
+    ms = ss * 1000
     p = re.compile(',[0-9]* ')
     m = p.search(line)
-    ms = int(m.group().lstrip(',').rstrip(' '))
-    ms += ss * 1000
+    ms += int(m.group().lstrip(',').rstrip(' '))
     return ms
 
 # Read text starting at the current position in file f.
@@ -105,40 +108,45 @@ def create_speech_file (snippettext, snippetnumber):
     os.remove(speechtxtfile)
     return speechfile
 
+def parse_subtitles(srtfile):
+    f = open(srtfile)
+    currenttime = 0
+    done = False
+    while done == False:
+        snippet = get_snippet(f)
+        if snippet == None:
+            done = True
+            break
+        snippetnumber = snippet[0]
+        starttime = snippet[1]
+        snippettext = snippet[2]
+
+        gap = starttime - currenttime
+        silencefile = generate_silence(gap, snippetnumber)
+        currenttime = starttime
+
+        print snippettext
+    
+        speechfile = create_speech_file(snippettext, snippetnumber)
+
+        os.system('cat ' + silencefile + ' >> ' + basename + '.mp3')
+        os.system('cat ' + speechfile + ' >> ' + basename + '.mp3')
+
+        # Unfortunately, we need to get the length of the output file
+        # every time to avoid audio drift.
+        pipe = os.popen(scriptpath + '/mp3len "' + basename + '.mp3"')
+        currenttime = int(pipe.readline())
+        os.remove(silencefile)
+        os.remove(speechfile)
+
+    os.remove('silence.wav')
+    os.remove('silence.raw')
+
+
 os.environ['PATH'] += ':/usr/local/bin'
 scriptpath = os.path.abspath( os.path.dirname( sys.argv[0]) )
-currenttime = 0
 basename = os.path.basename(os.path.splitext(sys.argv[1])[0])
-f = open(sys.argv[1], 'r')
-done = False
-while done == False:
-    snippet = get_snippet(f)
-    if snippet == None:
-        done = True
-        break
-    snippetnumber = snippet[0]
-    starttime = snippet[1]
-    snippettext = snippet[2]
 
-    gap = starttime - currenttime
-    silencefile = generate_silence(gap, snippetnumber)
-    currenttime = starttime
-
-    print snippettext
-    
-    speechfile = create_speech_file(snippettext, snippetnumber)
-
-    os.system('cat ' + silencefile + ' >> ' + basename + '.mp3')
-    os.system('cat ' + speechfile + ' >> ' + basename + '.mp3')
-
-    # Unfortunately, we need to get the length of the output file
-    # every time to avoid audio drift.
-    pipe = os.popen(scriptpath + '/mp3len "' + basename + '.mp3"')
-    currenttime = int(pipe.readline())
-    os.remove(silencefile)
-    os.remove(speechfile)
-
-os.remove('silence.wav')
-os.remove('silence.raw')
+parse_subtitles(sys.argv[1])
     
     
