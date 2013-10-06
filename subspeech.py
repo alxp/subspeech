@@ -30,22 +30,9 @@ global temppath
 # "line" is of the format '00:00:12,487 --> 00:00:14,762'
 # Return the number of milliseconds that this time evaluates to.
 def get_start_time(line):
-    hp = re.compile('[0-9]+:')
-    hm = hp.search(line)
-    hh = int(hm.group().rstrip(':'))
-    mp = re.compile(':[0-9][0-9]')
-    minm = mp.search(line)
-    mm = int(minm.group().lstrip(':'))
-    sp = re.compile(':[0-9][0-9],')
-    sm = sp.search(line)
-    # The .srt format was developed in France, so commas are used
-    # to denote decimal fractions.
-    ss = int(sm.group().lstrip(':').rstrip(','))
-    ss = hh * 3600 + mm * 60 + ss
-    ms = ss * 1000
-    msp = re.compile(',[0-9]* ')
-    msm = msp.search(line)
-    ms += int(msm.group().lstrip(',').rstrip(' '))
+    starttimestamp = re.findall(r'([0-9]+):([0-9]+):([0-9]+),([0-9]+)', line)[0]    
+    seconds = int(starttimestamp[0]) * 3600 + int(starttimestamp[1]) * 60 + int(starttimestamp[2])
+    ms = seconds * 1000 + int(starttimestamp[3])
     return ms
 
 # Read text starting at the current position in file f.
