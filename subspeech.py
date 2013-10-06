@@ -118,7 +118,7 @@ def parse_subtitles(srtfile, quiet):
         
         if (quiet == False):
             print snippettext
-    
+
         speechfile = create_speech_file(snippettext, snippetnumber)
         os.system('cat ' + temppath + "/" + silencefile + ' >> ' + os.getcwd() + "/" + basename + '.mp3')
         os.system('cat ' + temppath + "/" + speechfile + ' >> ' + os.getcwd() + "/" + basename + '.mp3')
@@ -141,7 +141,11 @@ temppath = mkdtemp()
 def main():
     global basename
     usage = "Usage: %prog [options] subtitlefile"
-    parser = OptionParser(usage=usage)
+    description = "Parse .srt (SubRip) format subtitles files and "\
+                  + "create a .mp3 file with a text-to-speech rendition "\
+                  + "of the content."
+    version = "SubSpeech version 1.0"
+    parser = OptionParser(usage=usage, description=description,version=version)
 
     parser.add_option("-q", "--quiet",
                       action="store_true", dest="quiet", default=False,
