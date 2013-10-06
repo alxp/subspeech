@@ -90,6 +90,20 @@ def generate_silence(timediff, seqnum):
     
     return filename
 
+def create_speech_file (snippettext, snippetnumber):
+    speechaifffile = basename + '_' + str(snippetnumber) + '_text.aiff'
+    speechtxtfile = basename + '_' + str(snippetnumber) + '_text.txt'
+    speechfile = basename + '_' + str(snippetnumber) + '_text.mp3'
+    txtout = open(speechtxtfile, 'w')
+    txtout.write(snippettext)
+    txtout.close()
+    subprocess.call(["say", "-o", speechaifffile, '-f', speechtxtfile])
+    
+    subprocess.call(['lame', '--quiet', '-b', '32', speechaifffile, speechfile])
+    
+    os.remove(speechaifffile)
+    os.remove(speechtxtfile)
+    return speechfile
 
 os.environ['PATH'] += ':/usr/local/bin'
 scriptpath = os.path.abspath( os.path.dirname( sys.argv[0]) )
@@ -105,23 +119,15 @@ while done == False:
     snippetnumber = snippet[0]
     starttime = snippet[1]
     snippettext = snippet[2]
+
     gap = starttime - currenttime
-    generate_silence(gap, snippetnumber)
+    silencefile = generate_silence(gap, snippetnumber)
     currenttime = starttime
-    speechaifffile = basename + '_' + str(snippetnumber) + '_text.aiff'
-    speechtxtfile = basename + '_' + str(snippetnumber) + '_text.txt'
-    speechfile = basename + '_' + str(snippetnumber) + '_text.mp3'
-    silencefile = basename + '_' + str(snippetnumber) + '_silence.mp3'
+
     print snippettext
-    txtout = open(speechtxtfile, 'w')
-    txtout.write(snippettext)
-    txtout.close()
-    subprocess.call(["say", "-o", speechaifffile, '-f', speechtxtfile])
     
-    subprocess.call(['lame', '--quiet', '-b', '32', speechaifffile, speechfile])
-    pipe = os.popen(scriptpath + '/mp3len "' + speechfile + '"')
-    speechlen = int(pipe.readline())
-    pipe.close()
+    speechfile = create_speech_file(snippettext, snippetnumber)
+
     os.system('cat ' + silencefile + ' >> ' + basename + '.mp3')
     os.system('cat ' + speechfile + ' >> ' + basename + '.mp3')
 
@@ -130,9 +136,8 @@ while done == False:
     pipe = os.popen(scriptpath + '/mp3len "' + basename + '.mp3"')
     currenttime = int(pipe.readline())
     os.remove(silencefile)
-    os.remove(speechaifffile)
-    os.remove(speechtxtfile)
     os.remove(speechfile)
+
 os.remove('silence.wav')
 os.remove('silence.raw')
     
