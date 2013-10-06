@@ -17,14 +17,21 @@ In addition, it relies on [LAME](http://lame.sourceforge.net/) and [FFmpeg](http
 
 You will also need a C++ compiler to compile the mp3len executable. Homebrew requires the Mac OS X command-line tools to be installed, so you should already have a compiler if you have successfully installed Homebrew.
 
-Running
+Compile
 -------
+
+The included C++ file must be compiled before you can run SubSpeech. Just run make to compile using the included Makefile, from the subspeech directory, run:
+
+    $ make
+
+Run
+---
   
 You execute the script by running it through Python.
 
     $ python subspeech.py <subtitle_file.srt>
 
-The program will output an mp3 file matching the same base filename as the subtitle file you gave it.
+The program will output an MP3 file matching the same base filename as the subtitle file.
 
 See Also
 --------

@@ -1,16 +1,28 @@
 #!/usr/bin/env python
 
+# Copyright 2010-2013 by Alexander O'Neill
+
+# Project home page: http://github.com/alxp/subspeech.
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import re, os, random, subprocess, struct, sys, wave
 from datetime import datetime
 from time import mktime
 
 global currenttime
 global basename
-
-def current_unix_time():
-    t=datetime.now()
-    return int(mktime(t.timetuple())+1e-6*t.microsecond)
-
 
 # "line" is of the format '00:00:12,487 --> 00:00:14,762'
 # Return the number of milliseconds that this time evaluates to.
@@ -40,21 +52,20 @@ def get_snippet(f):
     snippetnumber = 0
     starttime = 0
     snippettext = ''
-    l = f.readline()
-    while l != 'BLAHOHFUCK':
+
+    # Eat blank or invalid lines until a line number is found.
+    while True:
+        l = f.readline()
         if l == '':
             return None
         line = l.split()
-        if len(line) == 0:
-            l = f.readline()
-            continue
-        if len(line) > 1 or line[0].isdigit() == False:
-            l = f.readline()
+        # We are expecting a line number, ignore anything that isn't a number.
+        if len(line) == 0 or len(line) > 1 or line[0].isdigit() == False:
             continue
         snippetnumber = int(line[0])
         break
-    starttime = f.readline()
-    starttime = get_start_time(starttime)
+
+    starttime = get_start_time(f.readline())
     if type( starttime ) != int:
         return None #screw it, if the file isn't formatted well just bail.
     l = f.readline()
@@ -67,7 +78,7 @@ def get_snippet(f):
     return [snippetnumber, starttime, snippettext]
 
 
-# returns the filename of a newly-created mp3 file containing silence
+# Returns the filename of a newly-created MP3 file containing silence
 def generate_silence(timediff, seqnum):
     ticks = timediff / 23.22
     
