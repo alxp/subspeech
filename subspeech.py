@@ -21,6 +21,7 @@ import re, os, random, subprocess, struct, sys, wave
 from datetime import datetime
 from time import mktime
 from tempfile import mkdtemp
+from optparse import OptionParser
 
 global currenttime
 global basename
@@ -98,7 +99,7 @@ def create_speech_file (snippettext, snippetnumber):
     os.remove(temppath + "/" + speechtxtfile)
     return speechfile
 
-def parse_subtitles(srtfile):
+def parse_subtitles(srtfile, quiet):
     f = open(srtfile)
     currenttime = 0
     done = False
@@ -114,8 +115,9 @@ def parse_subtitles(srtfile):
         gap = starttime - currenttime
         silencefile = generate_silence(gap, snippetnumber)
         currenttime = starttime
-
-        print snippettext
+        
+        if (quiet == False):
+            print snippettext
     
         speechfile = create_speech_file(snippettext, snippetnumber)
         os.system('cat ' + temppath + "/" + silencefile + ' >> ' + os.getcwd() + "/" + basename + '.mp3')
@@ -135,10 +137,21 @@ def parse_subtitles(srtfile):
 os.environ['PATH'] += ':/usr/local/bin'
 scriptpath = os.path.abspath( os.path.dirname( sys.argv[0]) )
 temppath = mkdtemp()
-basename = os.path.basename(os.path.splitext(sys.argv[1])[0])
 
+def main():
+    global basename
+    usage = "Usage: %prog [options] subtitlefile"
+    parser = OptionParser(usage=usage)
 
-parse_subtitles(sys.argv[1])
-os.system("ls " + temppath)
-os.rmdir(temppath)
+    parser.add_option("-q", "--quiet",
+                      action="store_true", dest="quiet", default=False,
+                      help="Don't print the subtitles as they are read.")
+    options, arguments = parser.parse_args()
+    if len(arguments) != 1:
+        parser.error("No subtitles file specified.")
+    basename = os.path.basename(os.path.splitext(arguments[0])[0])
+    parse_subtitles(arguments[0], options.quiet)
+    os.rmdir(temppath)
     
+if __name__ == '__main__':
+    main()
