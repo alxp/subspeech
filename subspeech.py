@@ -22,11 +22,26 @@ from datetime import datetime
 from time import mktime
 from tempfile import mkdtemp
 from optparse import OptionParser
+from HTMLParser import HTMLParser
 
 global currenttime
 global basename
 global scriptpath
 global temppath
+
+class MLStripper(HTMLParser):
+    def __init__(self):
+        self.reset()
+        self.fed = []
+    def handle_data(self, data):
+        self.fed.append(data)
+    def get_data(self):
+        return ''.join(self.fed)
+
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()
 
 def get_yes_or_no(message):
     sys.stdout.write(message + ' (y/n) [default: n] ' )
@@ -99,7 +114,7 @@ def get_snippet(f):
             break
         snippettext = snippettext + ' ' + l
         l = f.readline()
-    return [snippetnumber, starttime, snippettext]
+    return [snippetnumber, starttime, strip_tags(snippettext)]
 
 
 def generate_silence(timediff, seqnum):
