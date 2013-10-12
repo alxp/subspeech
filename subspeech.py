@@ -28,20 +28,51 @@ global basename
 global scriptpath
 global temppath
 
-# "line" is of the format '00:00:12,487 --> 00:00:14,762'
-# Return the number of milliseconds that the start time evaluates to.
+def get_yes_or_no(message):
+    sys.stdout.write(message + ' (y/n) [default: n] ' )
+    answers = {'y': True, 'yes':True, 'n':False, 'no': False}
+    while True:
+        user_input = raw_input().lower()
+        if user_input in ['y', 'yes', 'n', 'no']:
+            return answers[user_input]
+        elif user_input in ['']:
+            # Default to true.
+            return False
+        else:
+            print 'Please enter y for yes or n for no.'
+
+
+def check_output_file(basename, force_overwrite, quiet):
+    mp3file = basename + '.mp3'
+    if os.path.isfile(mp3file):
+        if (force_overwrite == False):
+            
+            if (quiet == False):
+                user_overwrite = get_yes_or_no('File ' + mp3file + ' exists. Overwite it?')
+            else:
+                user_overwrite = False
+            if (user_overwrite == False):
+                print 'Aborting.'
+                exit(1)
+        
+        os.remove(mp3file)
+
+
 def get_start_time(line):
+    """'line' is of the format '00:00:12,487 --> 00:00:14,762'
+    Return the number of milliseconds that the start time evaluates to."""
     starttimestamp = re.findall(r'([0-9]+):([0-9]+):([0-9]+),([0-9]+)', line)[0]    
     seconds = int(starttimestamp[0]) * 3600 + int(starttimestamp[1]) * 60 + int(starttimestamp[2])
     ms = seconds * 1000 + int(starttimestamp[3])
     return ms
 
-# Read text starting at the current position in file f.
-# Return a tuple containing:
-#   The line number, read from the file
-#   The start time
-#   The text following the time stamp
+
 def get_snippet(f):
+    """ Read text starting at the current position in file f.
+    Return a tuple containing:
+    The line number, read from the file
+    The start time
+    The text following the time stamp"""
     snippetnumber = 0
     starttime = 0
     snippettext = ''
@@ -71,8 +102,8 @@ def get_snippet(f):
     return [snippetnumber, starttime, snippettext]
 
 
-# Returns the filename of a newly-created MP3 file containing silence
 def generate_silence(timediff, seqnum):
+    """ Returns the filename of a newly-created MP3 file containing silence"""
     # We are generating files at 23.2kHz.
     ticks = timediff / 23.22
     
@@ -168,10 +199,14 @@ def main():
                       action="store", dest="rate",
                       help="Speech rate. Passed along to 'say' directly.\n"\
                       + "100 = Slow, 300 = Fast, 500 = Very Fast")
+    parser.add_option("-f", "--force",
+                      action="store_true", dest="force_overwrite", default=False,
+                      help="Force overwrite if the output file exists.")
     options, arguments = parser.parse_args()
     if len(arguments) != 1:
         parser.error("No subtitles file specified.")
     basename = os.path.basename(os.path.splitext(arguments[0])[0])
+    check_output_file(basename, options.force_overwrite, options.quiet)
     parse_subtitles(arguments[0], options.quiet, options.voice, options.rate)
     os.rmdir(temppath)
     
