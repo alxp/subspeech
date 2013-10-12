@@ -29,7 +29,7 @@ global scriptpath
 global temppath
 
 # "line" is of the format '00:00:12,487 --> 00:00:14,762'
-# Return the number of milliseconds that this time evaluates to.
+# Return the number of milliseconds that the start time evaluates to.
 def get_start_time(line):
     starttimestamp = re.findall(r'([0-9]+):([0-9]+):([0-9]+),([0-9]+)', line)[0]    
     seconds = int(starttimestamp[0]) * 3600 + int(starttimestamp[1]) * 60 + int(starttimestamp[2])
@@ -84,14 +84,23 @@ def generate_silence(timediff, seqnum):
     
     return filename
 
-def create_speech_file (snippettext, snippetnumber):
+def create_speech_file (snippettext, snippetnumber, voice, rate):
     speechaifffile = basename + '_' + str(snippetnumber) + '_text.aiff'
     speechtxtfile = basename + '_' + str(snippetnumber) + '_text.txt'
     speechfile = basename + '_' + str(snippetnumber) + '_text.mp3'
     txtout = open(temppath + "/" + speechtxtfile, 'w')
     txtout.write(snippettext)
     txtout.close()
-    subprocess.call(["say", "-o", temppath + "/" + speechaifffile, '-f', temppath + "/" + speechtxtfile])
+
+    say_params = ["say", "-o", temppath + "/" + speechaifffile, '-f', temppath + "/" + speechtxtfile]
+
+    if (voice):
+        say_params += ["-v", voice]
+
+    if (rate):
+        say_params += ["-r", rate]
+
+    subprocess.call(say_params)
     
     subprocess.call(['lame', '--quiet', '-b', '32', temppath + "/" + speechaifffile, temppath + "/" + speechfile])
     
@@ -99,7 +108,7 @@ def create_speech_file (snippettext, snippetnumber):
     os.remove(temppath + "/" + speechtxtfile)
     return speechfile
 
-def parse_subtitles(srtfile, quiet):
+def parse_subtitles(srtfile, quiet, voice, rate):
     f = open(srtfile)
     currenttime = 0
     done = False
@@ -119,7 +128,7 @@ def parse_subtitles(srtfile, quiet):
         if (quiet == False):
             print snippettext
 
-        speechfile = create_speech_file(snippettext, snippetnumber)
+        speechfile = create_speech_file(snippettext, snippetnumber, voice, rate)
         os.system('cat ' + temppath + "/" + silencefile + ' >> ' + os.getcwd() + "/" + basename + '.mp3')
         os.system('cat ' + temppath + "/" + speechfile + ' >> ' + os.getcwd() + "/" + basename + '.mp3')
 
@@ -150,11 +159,20 @@ def main():
     parser.add_option("-q", "--quiet",
                       action="store_true", dest="quiet", default=False,
                       help="Don't print the subtitles as they are read.")
+    parser.add_option("-v", "--voice",
+                      action="store", dest="voice",
+                      help="Which synthesized voice to use. Passed along to "\
+                      + "the 'say' command. Run 'say -v ?' for a list of "\
+                      + "available voices.")
+    parser.add_option("-r", "--rate",
+                      action="store", dest="rate",
+                      help="Speech rate. Passed along to 'say' directly.\n"\
+                      + "100 = Slow, 300 = Fast, 500 = Very Fast")
     options, arguments = parser.parse_args()
     if len(arguments) != 1:
         parser.error("No subtitles file specified.")
     basename = os.path.basename(os.path.splitext(arguments[0])[0])
-    parse_subtitles(arguments[0], options.quiet)
+    parse_subtitles(arguments[0], options.quiet, options.voice, options.rate)
     os.rmdir(temppath)
     
 if __name__ == '__main__':
