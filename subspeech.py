@@ -144,7 +144,7 @@ def create_speech_file (snippettext, snippetnumber, voice, rate):
         say_params += ["-v", voice]
 
     if (rate):
-        say_params += ["-r", rate]
+        say_params += ["-r", str(rate)]
 
     subprocess.call(say_params)
     
@@ -205,18 +205,19 @@ def main():
     parser.add_option("-q", "--quiet",
                       action="store_true", dest="quiet", default=False,
                       help="Don't print the subtitles as they are read.")
+    parser.add_option("-f", "--force",
+                      action="store_true", dest="force_overwrite", default=False,
+                      help="Force overwrite if the output file exists.")
     parser.add_option("-v", "--voice",
                       action="store", dest="voice",
                       help="Which synthesized voice to use. Passed along to "\
                       + "the 'say' command. Run 'say -v ?' for a list of "\
                       + "available voices.")
     parser.add_option("-r", "--rate",
-                      action="store", dest="rate",
+                      action="store", type='int', dest="rate",
                       help="Speech rate. Passed along to 'say' directly.\n"\
                       + "100 = Slow, 300 = Fast, 500 = Very Fast")
-    parser.add_option("-f", "--force",
-                      action="store_true", dest="force_overwrite", default=False,
-                      help="Force overwrite if the output file exists.")
+
     options, arguments = parser.parse_args()
     if len(arguments) != 1:
         parser.error("No subtitles file specified.")
