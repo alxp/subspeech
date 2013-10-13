@@ -10,7 +10,7 @@
  * See: http://creativecommons.org/licenses/by-sa/3.0/
  */
 
-// determines the duration, in seconds, of an MP3;
+// determines the duration, in milliseconds, of an MP3;
 // assumes MPEG 1 (not 2 or 2.5) Audio Layer 3 (not 1 or 2)
 // constant bit rate (not variable)
 
@@ -28,8 +28,8 @@ const int bitrates[16] = {
 };
 
 
-//Intel processors are little-endian;
-//search Google or see: http://en.wikipedia.org/wiki/Endian
+// Intel processors are little-endian;
+// see: http://en.wikipedia.org/wiki/Endian
 int reverse(int i) {
   int toReturn = 0;
   toReturn |= ((i & 0x000000FF) << 24);
@@ -39,10 +39,10 @@ int reverse(int i) {
   return toReturn;
 }
 
-//In short, data in ID3v2 tags are stored as
-//"syncsafe integers". This is so the tag info
-//isn't mistaken for audio data, and attempted to
-//be "played". For more info, have fun Googling it.
+// In short, data in ID3v2 tags are stored as
+// "syncsafe integers". This is so the tag info
+// isn't mistaken for audio data, and attempted to
+// be "played".
 int syncsafe(int i) {
   int toReturn = 0;
   toReturn |= ((i & 0x7F000000) >> 24);
@@ -52,12 +52,12 @@ int syncsafe(int i) {
   return toReturn;
 }
 
-//How much room does ID3 version 1 tag info
-//take up at the end of this file (if any)?
+// How much room does ID3 version 1 tag info
+// take up at the end of this file (if any)?
 int id3v1size(ifstream& infile) {
   streampos savePos = infile.tellg();
 
-  //get to 128 bytes from file end
+  // get to 128 bytes from file end
   infile.seekg(0, ios::end);
   streampos length = infile.tellg() - (streampos)128;
   infile.seekg(length);
@@ -75,8 +75,8 @@ int id3v1size(ifstream& infile) {
   return size;
 }
 
-//how much room does ID3 version 2 tag info
-//take up at the beginning of this file (if any)
+// How much room does ID3 version 2 tag info
+// take up at the beginning of this file (if any)
 int id3v2size(ifstream& infile) {
   streampos savePos = infile.tellg();
   infile.seekg(0, ios::beg);
@@ -94,14 +94,12 @@ int id3v2size(ifstream& infile) {
   size = syncsafe(size);
 
   infile.seekg(savePos);
-  //"size" doesn't include the 10 byte ID3v2 header
+  // "size" doesn't include the 10 byte ID3v2 header
   return size + 10;
 }
 
 int main(int argCount, char* argValues[]) {
-  //you'll have to change this
-//  ifstream infile("C:/Music/Bush - Comedown.mp3", ios::binary);
-  //cout << "Using file " << argValues[1] << endl;
+
   ifstream infile( argValues[1], ios::binary );
 
   if (!infile.is_open()) {
@@ -109,7 +107,7 @@ int main(int argCount, char* argValues[]) {
     return 1;
   }
 
-  //determine beginning and end of primary frame data (not ID3 tags)
+  // determine beginning and end of primary frame data (not ID3 tags)
   infile.seekg(0, ios::end);
   streampos dataEnd = infile.tellg();
 
@@ -121,20 +119,19 @@ int main(int argCount, char* argValues[]) {
 
   infile.seekg(dataBegin,ios::beg);
 
-  //determine bitrate based on header for first frame of audio data
+  // determine bitrate based on header for first frame of audio data
   int headerBytes = 0;
   infile.read(reinterpret_cast<char*>(&headerBytes),sizeof(headerBytes));
 
   headerBytes = reverse(headerBytes);
 
-  // Hardcoded since output of LAME is set to 32kbps and the above
-  // detection was returning wrong bitrate.
+  // Hardcoded since output of LAME is set to 32kbps
   int bitrate = 32;
   float duration = (dataEnd - dataBegin)/(bitrate/8);
 
   infile.close();
   cout.setf(ios::fixed);
-
+  // Print a long integer without scientific notation.
   cout << setprecision(0) << duration << endl;
   return 0;
 }
