@@ -17,12 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import re, os, random, subprocess, struct, sys, wave
+import re, os, random, subprocess, struct, sys
 from datetime import datetime
 from time import mktime
 from tempfile import mkdtemp
 from optparse import OptionParser
 from HTMLParser import HTMLParser
+from shutil import rmtree
+from wavlen import wavLen
 
 global currenttime
 global basename
@@ -122,18 +124,16 @@ def generate_silence(timediff, seqnum):
     # We are generating files at 23.2kHz.
     ticks = timediff / 23.22
     
-    filename = basename + '_' + str(seqnum) + '_silence.mp3'
+    filename = basename + '_' + str(seqnum) + '_silence.wav'
     os.system('dd if=/dev/zero of=' + temppath + '/silence.raw bs=1k count='+str(int(round(ticks))) + '>/dev/null 2>/dev/null')
-    os.system('ffmpeg -v 0 -y -f s16le -ac 1 -ar 22050 -i ' + temppath + '/silence.raw -f wav ' + temppath + '/silence.wav >/dev/null 2>/dev/null')
+    os.system('ffmpeg -v 0 -y -f s16le -ac 1 -ar 22050 -i ' + temppath + '/' + 'silence.raw' + ' -f wav ' + temppath + '/' + filename)#+ ' >/dev/null 2>/dev/null')
 
-    os.system('lame --quiet -b 32 ' + temppath + "/silence.wav " + temppath + "/" + filename)
-    
-    return filename
+    return temppath + '/' + filename
 
 def create_speech_file (snippettext, snippetnumber, voice, rate):
     speechaifffile = basename + '_' + str(snippetnumber) + '_text.aiff'
     speechtxtfile = basename + '_' + str(snippetnumber) + '_text.txt'
-    speechfile = basename + '_' + str(snippetnumber) + '_text.mp3'
+    speechfile = basename + '_' + str(snippetnumber) + '_text.wav'
     txtout = open(temppath + "/" + speechtxtfile, 'w')
     txtout.write(snippettext)
     txtout.close()
@@ -148,16 +148,18 @@ def create_speech_file (snippettext, snippetnumber, voice, rate):
 
     subprocess.call(say_params)
     
-    subprocess.call(['lame', '--quiet', '-b', '32', temppath + "/" + speechaifffile, temppath + "/" + speechfile])
+    # Create .wav file of pseech
+    os.system('ffmpeg -i ' + temppath + '/' + speechaifffile + ' -f wav ' + temppath + '/' + speechfile + ' >/dev/null 2>/dev/null')
     
     os.remove(temppath + "/" + speechaifffile)
     os.remove(temppath + "/" + speechtxtfile)
-    return speechfile
+    return temppath + '/' + speechfile
 
 def parse_subtitles(srtfile, quiet, voice, rate):
     f = open(srtfile)
     currenttime = 0
     done = False
+    sound_files = []
     while done == False:
         snippet = get_snippet(f)
         if snippet == None:
@@ -168,30 +170,51 @@ def parse_subtitles(srtfile, quiet, voice, rate):
         snippettext = snippet[2]
 
         gap = starttime - currenttime
-        silencefile = generate_silence(gap, snippetnumber)
+        # Too-small gaps, like 4ms, create invalid .wav files.
+        if (gap > 50):
+            silence_file = generate_silence(gap, snippetnumber)
+            sound_files.append(silence_file)
+        else:
+            silence_file = None
+
         currenttime = starttime
         
         if (quiet == False):
             print snippettext
 
         speechfile = create_speech_file(snippettext, snippetnumber, voice, rate)
-        os.system('cat ' + temppath + "/" + silencefile + ' >> ' + os.getcwd() + "/" + basename + '.mp3')
-        os.system('cat ' + temppath + "/" + speechfile + ' >> ' + os.getcwd() + "/" + basename + '.mp3')
 
-        # Unfortunately, we need to get the length of the output file
-        # every time to avoid audio drift.
-        pipe = os.popen(scriptpath + '/mp3len "' + basename + '.mp3"')
-        currenttime = int(pipe.readline())
-        os.remove(temppath + "/" + silencefile)
-        os.remove(temppath + "/" + speechfile)
+        currenttime += wavLen(speechfile)
+            
+        sound_files.append(speechfile)
 
-    os.remove(temppath + '/silence.wav')
-    os.remove(temppath + '/silence.raw')
+        if (silence_file):
+            os.remove(temppath + '/silence.raw')
+
+    return sound_files
 
 
 os.environ['PATH'] += ':/usr/local/bin'
 scriptpath = os.path.abspath( os.path.dirname( sys.argv[0]) )
 temppath = mkdtemp()
+
+def combine_sound_files(sound_files):
+    output_file = open(temppath + '/soundfiles.txt', 'w')
+    for sound_file in sound_files:
+        output_file.write('file \'' + sound_file + '\'\n')
+    output_file.close()
+
+    combined_filename = temppath + '/' + basename + '.wav'
+    os.system('ffmpeg -f concat -i ' + temppath + '/soundfiles.txt -c copy ' +  combined_filename + ' >/dev/null 2>/dev/null')
+    return combined_filename
+
+def compress_combined_file(wav_file, quiet):
+    if (quiet):
+        quietstr = ' --quiet'
+    else:
+        quietstr = ''
+
+    os.system('lame ' + wav_file + ' ' + basename + '.mp3' + quietstr)
 
 def main():
     global basename
@@ -223,8 +246,10 @@ def main():
         parser.error("No subtitles file specified.")
     basename = os.path.basename(os.path.splitext(arguments[0])[0])
     check_output_file(basename, options.force_overwrite, options.quiet)
-    parse_subtitles(arguments[0], options.quiet, options.voice, options.rate)
-    os.rmdir(temppath)
+    sound_files = parse_subtitles(arguments[0], options.quiet, options.voice, options.rate)
+    wav_file = combine_sound_files(sound_files)
+    compress_combined_file(wav_file, options.quiet)
+    rmtree(temppath)
     
 if __name__ == '__main__':
     main()
