@@ -148,7 +148,7 @@ def create_speech_file (snippettext, snippetnumber, voice, rate):
 
     subprocess.call(say_params)
     
-    # Create .wav file of pseech
+    # Create .wav file of speech
     os.system('ffmpeg -i ' + temppath + '/' + speechaifffile + ' -f wav ' + temppath + '/' + speechfile + ' >/dev/null 2>/dev/null')
     
     os.remove(temppath + "/" + speechaifffile)
