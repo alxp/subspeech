@@ -214,7 +214,7 @@ def compress_combined_file(wav_file, quiet):
     else:
         quietstr = ''
 
-    os.system('lame ' + wav_file + ' ' + basename + '.mp3' + quietstr)
+    os.system('lame -v ' + wav_file + ' ' + basename + '.mp3' + quietstr)
 
 def main():
     global basename
