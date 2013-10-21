@@ -14,7 +14,7 @@ Requirements
 
 This script relies on Mac OS X's 'say' command, as such it will only run on Mac OS X. Microsoft Windows users should check out http://subtitle-to-speech.blogspot.com/ for a GUI application that does the same thing.
 
-In addition, it relies on [LAME](http://lame.sourceforge.net/) and [FFmpeg](http://www.ffmpeg.org/) for audio file wrangling. If you have [Homebrew](http://brew.sh/) installed, you can get tehse by running
+In addition, it relies on [LAME](http://lame.sourceforge.net/) and [FFmpeg](http://www.ffmpeg.org/) for audio file wrangling. If you have [Homebrew](http://brew.sh/) installed, you can get these by running
 
     $ brew install lame ffmpeg
 
