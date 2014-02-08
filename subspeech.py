@@ -138,7 +138,7 @@ def create_speech_file (snippettext, snippetnumber, voice, rate):
     txtout.write(snippettext)
     txtout.close()
 
-    say_params = ["say", "-o", temppath + "/" + speechaifffile, '-f', temppath + "/" + speechtxtfile]
+    say_params = ["say", "-o", temppath + "/" + speechfile, "--data-format=LEI16@22050", '-f', temppath + "/" + speechtxtfile]
 
     if (voice):
         say_params += ["-v", voice]
@@ -148,10 +148,6 @@ def create_speech_file (snippettext, snippetnumber, voice, rate):
 
     subprocess.call(say_params)
     
-    # Create .wav file of speech
-    os.system('ffmpeg -i ' + temppath + '/' + speechaifffile + ' -f wav ' + temppath + '/' + speechfile + ' >/dev/null 2>/dev/null')
-    
-    os.remove(temppath + "/" + speechaifffile)
     os.remove(temppath + "/" + speechtxtfile)
     return temppath + '/' + speechfile
 
