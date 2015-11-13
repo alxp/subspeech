@@ -1,7 +1,7 @@
 SubSpeech
 =========
 
-Copyright &copy; 2010-2013 [Alexander O'Naill](https://github.com/alxp)
+Copyright &copy; 2010-2013 [Alexander O'Neill](https://github.com/alxp)
 
 Reads a SubRip-format subtitles file and creates a text-to-speech rendition of the text, obeying the embedded timing tags. This is hopefully of use to vision-impaired or otherwise print-disabled users who can listen to the speech track while watching a film with subtitled dialogue.
 
