@@ -22,7 +22,7 @@ from datetime import datetime
 from time import mktime
 from tempfile import mkdtemp
 from optparse import OptionParser
-from HTMLParser import HTMLParser
+from html.parser import HTMLParser
 from shutil import rmtree
 from wavlen import wavLen
 
@@ -33,6 +33,7 @@ global temppath
 
 class MLStripper(HTMLParser):
     def __init__(self):
+        super().__init__()
         self.reset()
         self.fed = []
     def handle_data(self, data):
@@ -47,16 +48,16 @@ def strip_tags(html):
 
 def get_yes_or_no(message):
     sys.stdout.write(message + ' (y/n) [default: n] ' )
-    answers = {'y': True, 'yes':True, 'n':False, 'no': False}
+    answers = {'y': True, 'yes': True, 'n': False, 'no': False}
     while True:
-        user_input = raw_input().lower()
+        user_input = input().lower()
         if user_input in ['y', 'yes', 'n', 'no']:
             return answers[user_input]
         elif user_input in ['']:
             # Default to true.
             return False
         else:
-            print 'Please enter y for yes or n for no.'
+            print('Please enter y for yes or n for no.')
 
 
 def check_output_file(basename, force_overwrite, quiet):
@@ -69,7 +70,7 @@ def check_output_file(basename, force_overwrite, quiet):
             else:
                 user_overwrite = False
             if (user_overwrite == False):
-                print 'Aborting.'
+                print('Aborting.')
                 exit(1)
         
         os.remove(mp3file)
@@ -176,7 +177,7 @@ def parse_subtitles(srtfile, quiet, voice, rate):
         currenttime = starttime
         
         if (quiet == False):
-            print snippettext
+            print(snippettext)
 
         speechfile = create_speech_file(snippettext, snippetnumber, voice, rate)
 
@@ -193,6 +194,7 @@ def parse_subtitles(srtfile, quiet, voice, rate):
 os.environ['PATH'] += ':/usr/local/bin'
 scriptpath = os.path.abspath( os.path.dirname( sys.argv[0]) )
 temppath = mkdtemp()
+print(temppath)
 
 def combine_sound_files(sound_files):
     output_file = open(temppath + '/soundfiles.txt', 'w')
@@ -201,7 +203,7 @@ def combine_sound_files(sound_files):
     output_file.close()
 
     combined_filename = temppath + '/' + basename + '.wav'
-    os.system('ffmpeg -f concat -i ' + temppath + '/soundfiles.txt -c copy ' +  combined_filename + ' >/dev/null 2>/dev/null')
+    os.system('ffmpeg -safe 0 -f concat -i ' + temppath + '/soundfiles.txt -c copy ' +  combined_filename + ' >/dev/null 2>/dev/null')
     return combined_filename
 
 def compress_combined_file(wav_file, quiet):
